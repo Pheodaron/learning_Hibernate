@@ -2,6 +2,12 @@
 
 https://docs.jboss.org/hibernate/orm/current/userguide/html_single/Hibernate_User_Guide.html
 
+Статьи для дополнения:
+https://habr.com/ru/post/542328/
+https://habr.com/ru/post/249073/
+https://habr.com/ru/post/132385/
+https://habr.com/ru/post/416851/
+
 **ORM** — (англ. Object-relational mapping). В двух словах ORM — это отображение объектов какого-либо объектно-ориентированного языка в структуры реляционных баз данных.
 
 **Hibernate** - это инструмент ORM на основе Java, который обеспечивает структуру для сопоставления POJO с таблицами реляционной базы данных и наоборот.
