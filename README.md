@@ -121,4 +121,5 @@ Transaction входит в Session и её можно получить с по�
 - void registerSynchronization(Synchronization s)
 - boolean wasCommited()
 - boolean wasRolledBack()
+
 https://docs.jboss.org/hibernate/orm/3.2/api/org/hibernate/Transaction.html
