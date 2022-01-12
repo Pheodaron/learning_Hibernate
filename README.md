@@ -177,3 +177,142 @@ https://docs.jboss.org/hibernate/orm/3.2/api/org/hibernate/Transaction.html
 
 ### Cascade types
 
+### Односторонние и двухсторонние отношения в Hibernate
+Варианта всего 4:
+- OneToOne - один к одному
+- OneToMany - один ко многим
+- ManyToOne - многие к одному
+- ManyToMany - многие ко многим
+
+Каждое из этих отношений может быть односторонним (unidirectional) или двусторонним (bidirectional).
+
+#### Односторонние отношения
+
+Односторонним называется отношение, владельцем которого является только одна из двух сторон. Отсюда и название. Следует заметить, что при этом вторая сторона об этом отношении ничего не знает. Hibernate будет считать владельцем отношения ту сущность, в которой будет поставлена аннотация отношения.
+
+При этом владельцем отношения сделаем сторону контакта. При этом сущности будут выглядеть следующим образом.
+```
+@Entity
+@Table(name = "contacts")
+public class Contact {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    private String type;
+
+    @Column
+    private String data;
+    
+    // Конструктор по умолчанию, геттеры, сеттеры и т.д.
+}
+
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    private String username;
+
+    @OneToMany
+    private List<Contact> contacts;
+
+    // Конструктор по умолчанию, гетеры, сеттеры и т.д.
+}
+```
+ Если запустить данный код и посмотреть на созданную Hibernate структуру таблиц, то мы столкнёмся с одной хорошо известной проблемой.
+
+```
+create table contacts (
+    id bigint not null auto_increment,
+    data varchar(255),
+    type varchar(255),
+    primary key (id)
+) engine=InnoDB;
+
+create table users (
+    id bigint not null auto_increment,
+    username varchar(128) not null,
+    primary key (id)
+) engine=InnoDB;
+
+create table users_contacts (
+    User_id bigint not null,
+    contacts_id bigint not null
+) engine=InnoDB;
+```
+Чтобы связать сущности Hibernate создал дополнительную таблицу связи (join table) с именем users_contacts, хотя сущности вполне можно было бы связать через ссылочное поле в таблице contacts.
+
+Проблему можно легко решить добавив аннотацию JoinColumn к полю contacts.
+
+```
+ @OneToMany
+ @JoinColumn(name = "user_id")
+ private List<Contact> contacts;
+```
+
+При таких настройках связь будет проводиться при помощи колонки user_id в таблице contacts, а таблица связи создаваться не будет.
+
+#### Двусторонние отношения
+
+У двусторонних отношений помимо стороны - владельца (owning side) имеется ещё и противоположная сторона (inverse side). Т.е. обе стороны отношения обладают информацией о связи. Логично предположить, что из одностороннего отношения можно сделать двустороннее просто добавив поле и аннотацию в класс сущности противоположной стороны.
+```
+@Entity
+@Table(name = "users")
+public class User {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    private String username;
+
+    @ManyToMany
+    private List<Role> roles;
+
+    // Конструктор по умолчанию, гетеры, сеттеры и т.д.
+}
+
+@Entity
+@Table(name = "roles")
+public class Role {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    private String name;
+
+    @ManyToMany
+    private List<User> users;
+
+    // Конструктор по умолчанию, гетеры, сеттеры и т.д.
+}
+```
+ Помимо таблиц для пользователей и ролей Hibernate создаст две таблицы связи, хотя хватило бы и одной.
+ 
+ ```
+ create table roles_users (
+    Role_id bigint not null,
+    users_id bigint not null
+) engine=InnoDB;
+
+create table users_roles (
+    User_id bigint not null,
+    roles_id bigint not null
+) engine=InnoDB;
+```
+
+Дело в том, что вместо одного двустороннего отношения были созданы два односторонних. Тоже самое произойдет и для отношения один ко многим. Чтобы Hibernate понял, что нужно создать именно двустороннее отношение нужно указать, какая из сторон является владельцем отношений, а какая является обратной стороной. Это делается при помощи атрибута **mappedBy**. Важно отметить, что указывается этот атрибут в аннотации, которая находится на противоположной стороне отношения.
+
+```
+    // значение атрибута mappedBy - имя поля связи в классе сущности-владельца отношений
+    @ManyToMany(mappedBy = "roles")
+    private List<User> users;
+```
+
+Следует отметить, что в отношении один ко многим стороной-владельцем может быть только сторона многих (many), поэтому атрибут mappedBy есть только в аннотации @OneToMany .
